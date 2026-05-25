@@ -1,0 +1,48 @@
+augmentation:
+  color_jitter:
+    brightness: 0.2
+    contrast: 0.2
+    hue: 0.05
+    saturation: 0.1
+  horizontal_flip_prob: 0.5
+  jpeg_quality_range: null
+  random_crop_scale:
+  - 0.8
+  - 1.0
+  use_train_aug: true
+data:
+  batch_size: 32
+  batch_size_eval: 64
+  img_size: 224
+  num_workers: 4
+  pin_memory: true
+  test_dir: /mnt/d/AI-Proj/ResNet30k/test
+  train_dir: /mnt/d/AI-Proj/ResNet30k/train
+  val_dir: /mnt/d/AI-Proj/ResNet30k/val
+device: cuda
+early_stop:
+  metric: val_auroc
+  mode: max
+  patience: 3
+model:
+  dropout: 0.2
+  name: efficientnet_b0
+  num_classes: 2
+  pretrained: true
+optimizer:
+  lr: 0.0003
+  lr_backbone: 0.0001
+  name: adamw
+  weight_decay: 0.0001
+scheduler:
+  min_lr: 1.0e-06
+  name: cosine
+train:
+  epochs: 10
+  freeze_backbone_epochs: 1
+  grad_clip: 1.0
+  label_smoothing: 0.05
+  run_name_prefix: effb0
+  save_dir: runs
+  seed: 42
+  warmup_epochs: 1

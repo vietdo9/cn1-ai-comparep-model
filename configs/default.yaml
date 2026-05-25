@@ -1,0 +1,53 @@
+data:
+  train_dir: "/mnt/d/AI-Proj/ResNet30k/train"
+  val_dir: "/mnt/d/AI-Proj/ResNet30k/val"
+  test_dir: "/mnt/d/AI-Proj/ResNet30k/test"
+  img_size: 224
+  batch_size: 32
+  batch_size_eval: 64
+  num_workers: 4
+  pin_memory: true
+
+model:
+  name: "efficientnet_b0"
+  num_classes: 2
+  pretrained: true
+  dropout: 0.2
+
+train:
+  epochs: 10
+  seed: 42
+  label_smoothing: 0.05
+  grad_clip: 1.0
+  warmup_epochs: 1
+  freeze_backbone_epochs: 1
+  save_dir: "runs"
+  run_name_prefix: "effb0"
+
+optimizer:
+  name: "adamw"
+  lr: 3.0e-4
+  lr_backbone: 1.0e-4
+  weight_decay: 1.0e-4
+
+scheduler:
+  name: "cosine"
+  min_lr: 1.0e-6
+
+early_stop:
+  patience: 3
+  metric: "val_auroc"
+  mode: "max"
+
+augmentation:
+  use_train_aug: true
+  random_crop_scale: [0.8, 1.0]
+  horizontal_flip_prob: 0.5
+  color_jitter:
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.1
+    hue: 0.05
+  jpeg_quality_range: null
+
+device: "auto"
