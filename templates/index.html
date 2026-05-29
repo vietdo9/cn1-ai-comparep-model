@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA - Triple AI Image Detector & Model Comparator</title>
+    <meta name="description" content="A premium, state-of-the-art web application that compares EfficientNet-B0, ResNet50, and Xception models for detecting AI-generated vs real images.">
+    <!-- Google Fonts: Outfit & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Premium Glowing Background Effects -->
+    <div class="glow-bg">
+        <div class="glow-sphere sphere-1"></div>
+        <div class="glow-sphere sphere-2"></div>
+        <div class="glow-sphere sphere-3"></div>
+    </div>
+
+    <!-- Main Wrapper -->
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-logo">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-microchip"></i>
+                    <div class="logo-pulse"></div>
+                </div>
+                <div class="logo-text">
+                    <h1>AURA</h1>
+                    <p>AI vs Real Image Analyzer & Model Comparator</p>
+                </div>
+            </div>
+            
+            <!-- Dynamic Status Bar -->
+            <div class="system-status" id="systemStatus">
+                <div class="status-indicator">
+                    <span class="pulse-dot active"></span>
+                    <span class="status-label">Device: <strong id="deviceType">Detecting...</strong></span>
+                </div>
+                <div class="divider"></div>
+                <div class="status-models">
+                    <span class="model-badge" id="badgeEff"><i class="fa-solid fa-check-circle"></i> EffNet</span>
+                    <span class="model-badge" id="badgeRes"><i class="fa-solid fa-check-circle"></i> ResNet</span>
+                    <span class="model-badge" id="badgeXcp"><i class="fa-solid fa-check-circle"></i> Xception</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Content -->
+        <main class="dashboard-grid">
+            
+            <!-- LEFT COLUMN: Inputs & Image Display -->
+            <section class="dashboard-column col-left">
+                
+                <!-- Card 1: Upload Zone -->
+                <div class="dashboard-card upload-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-cloud-arrow-up"></i> Upload Analyzer</h3>
+                        <span class="card-badge">Single Image</span>
+                    </div>
+                    
+                    <div class="drop-zone" id="dropZone">
+                        <div class="drop-zone-content">
+                            <div class="upload-icon-wrapper">
+                                <i class="fa-solid fa-images drop-icon"></i>
+                            </div>
+                            <h4>Drag & drop image here</h4>
+                            <p>Supports PNG, JPG, JPEG, WEBP, BMP</p>
+                            <span class="btn btn-primary">Browse Files</span>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    </div>
+
+                    <!-- Preloaded Samples -->
+                    <div class="samples-container">
+                        <span class="samples-title">Try Demo Samples:</span>
+                        <div class="samples-grid">
+                            <button class="sample-btn" data-sample="real_face.jpg">
+                                <i class="fa-solid fa-user-tie"></i> Real Portrait
+                            </button>
+                            <button class="sample-btn" data-sample="ai_landscape.jpg">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Landscape
+                            </button>
+                            <button class="sample-btn" data-sample="ai_anime.jpg">
+                                <i class="fa-solid fa-palette"></i> AI Anime Art
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Interactive Settings & Threshold -->
+                <div class="dashboard-card settings-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-sliders"></i> Parameters</h3>
+                    </div>
+                    <div class="settings-body">
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <span>Decision Threshold</span>
+                                <span class="badge-val" id="thresholdVal">0.50</span>
+                            </div>
+                            <input type="range" id="thresholdSlider" min="0.05" max="0.95" step="0.05" value="0.50" class="neon-slider">
+                            <div class="slider-labels">
+                                <span>More FAKE bias</span>
+                                <span>Balanced</span>
+                                <span>More REAL bias</span>
+                            </div>
+                            <p class="setting-desc"><i class="fa-solid fa-circle-info"></i> Sets the minimum probability required to label an image as <strong>REAL</strong>. Higher values bias toward labelling as FAKE.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Preview and Metadata -->
+                <div class="dashboard-card preview-card hidden" id="previewCard">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-eye"></i> Analysis Image</h3>
+                        <button class="btn btn-text" id="btnReRun"><i class="fa-solid fa-arrows-rotate"></i> Re-Analyze</button>
+                    </div>
+                    <div class="preview-body">
+                        <div class="img-preview-wrapper">
+                            <img id="imagePreview" src="" alt="Testing target preview">
+                        </div>
+                        <div class="metadata-table">
+                            <div class="meta-row">
+                                <span class="meta-label">Dimensions</span>
+                                <span class="meta-value" id="metaDim">1024 x 1024 px</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Format</span>
+                                <span class="meta-value" id="metaFormat">JPEG</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">File Size</span>
+                                <span class="meta-value" id="metaSize">240 KB</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Filename</span>
+                                <span class="meta-value text-truncate" id="metaFilename">my_image.jpg</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT COLUMN: Results & Comparators -->
+            <section class="dashboard-column col-right">
+                
+                <!-- Welcome/Empty State -->
+                <div class="dashboard-card welcome-card" id="welcomeCard">
+                    <div class="welcome-content">
+                        <i class="fa-solid fa-laptop-code welcome-logo"></i>
+                        <h2>Ready for Comparison</h2>
+                        <p>Upload a custom photo or choose one of our prepared AI vs Real samples to run the model benchmark comparison.</p>
+                        <div class="welcome-features">
+                            <div class="w-feature"><i class="fa-solid fa-bolt"></i> Realtime Inference Latency</div>
+                            <div class="w-feature"><i class="fa-solid fa-chart-bar"></i> Multi-Model Probability Charts</div>
+                            <div class="w-feature"><i class="fa-solid fa-scale-balanced"></i> Dynamic Consensus Solver</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div class="dashboard-card loading-card hidden" id="loadingCard">
+                    <div class="spinner-container">
+                        <div class="double-spinner"></div>
+                    </div>
+                    <h3>Running Triple Neural Inference</h3>
+                    <p>Executing forward passes on EfficientNet-B0, ResNet50, and Xception architectures...</p>
+                </div>
+
+                <!-- Card 1: Consensus aggregate summary -->
+                <div class="dashboard-card consensus-card hidden" id="consensusCard">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-square-poll-vertical"></i> Consensus Verdict</h3>
+                        <span class="verdict-tag" id="verdictTag">REAL</span>
+                    </div>
+                    <div class="consensus-body">
+                        <div class="consensus-indicator">
+                            <div class="radial-gauge">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                                    <circle class="gauge-progress" id="consensusGauge" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                                </svg>
+                                <div class="gauge-center">
+                                    <span class="gauge-value" id="consensusConfidence">98.4%</span>
+                                    <span class="gauge-label">Confidence</span>
+                                </div>
+                            </div>
+                            <div class="consensus-text">
+                                <h4 id="consensusTitle">REAL (3/3 Models Agree)</h4>
+                                <p id="consensusSummary">All three network architectures predict with extreme confidence that this image is authentic and contains no AI-generated elements.</p>
+                            </div>
+                        </div>
+                        <div class="consensus-stats">
+                            <div class="c-stat">
+                                <span class="label">Most Confident Model</span>
+                                <span class="val" id="statMostConfident">Xception (98.4%)</span>
+                            </div>
+                            <div class="c-stat">
+                                <span class="label">Avg Latency</span>
+                                <span class="val" id="statAvgLatency">45.2 ms</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Individual Model Comparison Grid -->
+                <div class="individual-results hidden" id="individualResults">
+                    
+                    <!-- EfficientNet Card -->
+                    <div class="model-result-card" id="cardEffNet">
+                        <div class="model-card-header">
+                            <div class="model-title-block">
+                                <span class="model-name">EfficientNet-B0</span>
+                                <span class="model-tech">PyTorch</span>
+                            </div>
+                            <span class="model-prediction-badge fake" id="effPredictBadge">FAKE</span>
+                        </div>
+                        <div class="model-card-body">
+                            <!-- Horizontal Progress Bars -->
+                            <div class="prob-distribution">
+                                <div class="prob-bar-row">
+                                    <span class="prob-label">Real</span>
+                                    <div class="prob-bar-container">
+                                        <div class="prob-bar real-bar" id="effRealBar" style="width: 2%"></div>
+                                    </div>
+                                    <span class="prob-val" id="effRealVal">2.1%</span>
+                                </div>
+                                <div class="prob-bar-row">
+                                    <span class="prob-label">Fake</span>
+                                    <div class="prob-bar-container">
+                                        <div class="prob-bar fake-bar" id="effFakeBar" style="width: 98%"></div>
+                                    </div>
+                                    <span class="prob-val" id="effFakeVal">97.9%</span>
+                                </div>
+                            </div>
+                            <div class="model-meta-row">
+                                <span><i class="fa-solid fa-gauge-high"></i> Latency: <strong id="effLatency">23.5 ms</strong></span>
+                                <span><i class="fa-solid fa-server"></i> Device: <strong id="effDevice">CUDA</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ResNet50 Card -->
+                    <div class="model-result-card" id="cardResNet">
+                        <div class="model-card-header">
+                            <div class="model-title-block">
+                                <span class="model-name">ResNet50</span>
+                                <span class="model-tech">Keras / TF</span>
+                            </div>
+                            <span class="model-prediction-badge real" id="resPredictBadge">REAL</span>
+                        </div>
+                        <div class="model-card-body">
+                            <div class="prob-distribution">
+                                <div class="prob-bar-row">
+                                    <span class="prob-label">Real</span>
+                                    <div class="prob-bar-container">
+                                        <div class="prob-bar real-bar" id="resRealBar" style="width: 82%"></div>
+                                    </div>
+                                    <span class="prob-val" id="resRealVal">82.4%</span>
+                                </div>
+                                <div class="prob-bar-row">
+                                    <span class="prob-label">Fake</span>
+                                    <div class="prob-bar-container">
+                                        <div class="prob-bar fake-bar" id="resFakeBar" style="width: 18%"></div>
+                                    </div>
+                                    <span class="prob-val" id="resFakeVal">17.6%</span>
+                                </div>
+                            </div>
+                            <div class="model-meta-row">
+                                <span><i class="fa-solid fa-gauge-high"></i> Latency: <strong id="resLatency">142.1 ms</strong></span>
+                                <span><i class="fa-solid fa-server"></i> Device: <strong id="resDevice">CPU</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Xception Card -->
+                    <div class="model-result-card" id="cardXception">
+                        <div class="model-card-header">
+                            <div class="model-title-block">
+                                <span class="model-name">Xception</span>
+                                <span class="model-tech">PyTorch</span>
+                            </div>
+                            <span class="model-prediction-badge fake" id="xcpPredictBadge">FAKE</span>
+                        </div>
+                        <div class="model-card-body">
+                            <div class="prob-distribution">
+                                <div class="prob-bar-row">
+                                    <span class="prob-label">Real</span>
+                                    <div class="prob-bar-container">
+                                        <div class="prob-bar real-bar" id="xcpRealBar" style="width: 1%"></div>
+                                    </div>
+                                    <span class="prob-val" id="xcpRealVal">0.6%</span>
+                                </div>
+                                <div class="prob-bar-row">
+                                    <span class="prob-label">Fake</span>
+                                    <div class="prob-bar-container">
+                                        <div class="prob-bar fake-bar" id="xcpFakeBar" style="width: 99%"></div>
+                                    </div>
+                                    <span class="prob-val" id="xcpFakeVal">99.4%</span>
+                                </div>
+                            </div>
+                            <div class="model-meta-row">
+                                <span><i class="fa-solid fa-gauge-high"></i> Latency: <strong id="xcpLatency">44.8 ms</strong></span>
+                                <span><i class="fa-solid fa-server"></i> Device: <strong id="xcpDevice">CUDA</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+        </main>
+
+        <!-- Dynamic History Section -->
+        <section class="dashboard-section history-section hidden" id="historySection">
+            <div class="section-header">
+                <h3><i class="fa-solid fa-history"></i> Session Analysis History</h3>
+                <button class="btn btn-text btn-sm" id="btnClearHistory"><i class="fa-solid fa-trash"></i> Clear</button>
+            </div>
+            <div class="history-list-wrapper">
+                <div class="history-list" id="historyList">
+                    <!-- Dynamic Thumbnails Added Here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- System & Diagnostics details drawer -->
+        <section class="dashboard-section diagnostics-section">
+            <div class="accordion-header" id="diagnosticHeader">
+                <h3><i class="fa-solid fa-bug"></i> Deep System Diagnostics & Model Configurations</h3>
+                <i class="fa-solid fa-chevron-down fold-arrow"></i>
+            </div>
+            <div class="accordion-content hidden" id="diagnosticContent">
+                <div class="diagnostics-grid">
+                    <div class="diag-card">
+                        <h4><i class="fa-solid fa-circle-nodes"></i> Model Specs Table</h4>
+                        <div class="specs-table-wrapper">
+                            <table class="specs-table">
+                                <thead>
+                                    <tr>
+                                        <th>Model Architecture</th>
+                                        <th>Framework</th>
+                                        <th>Trainable Params</th>
+                                        <th>Weight Checkpoint Size</th>
+                                        <th>Inference Target Device</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="specsTableBody">
+                                    <tr>
+                                        <td>EfficientNet-B0</td>
+                                        <td>PyTorch / timm</td>
+                                        <td id="effParamCount">Loading...</td>
+                                        <td id="effFileSize">Loading...</td>
+                                        <td id="effTargetDevice">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>ResNet50</td>
+                                        <td>Keras / TensorFlow 2.10</td>
+                                        <td id="resParamCount">Loading...</td>
+                                        <td id="resFileSize">Loading...</td>
+                                        <td id="resTargetDevice">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Xception</td>
+                                        <td>PyTorch / timm</td>
+                                        <td id="xcpParamCount">Loading...</td>
+                                        <td id="xcpFileSize">Loading...</td>
+                                        <td id="xcpTargetDevice">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="diag-card font-mono">
+                        <div class="json-header">
+                            <h4><i class="fa-solid fa-terminal"></i> Latest API Response JSON</h4>
+                            <button class="btn btn-text btn-sm" id="btnCopyJSON"><i class="fa-regular fa-copy"></i> Copy JSON</button>
+                        </div>
+                        <pre class="json-preview" id="jsonPreview">No analysis run in this session yet.</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 AURA Analyzer &bull; Google Deepmind Advanced Agentic Coding Companion &bull; Custom Vanilla CSS Theme</p>
+        </footer>
+
+    </div>
+
+    <!-- Main JavaScript App -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

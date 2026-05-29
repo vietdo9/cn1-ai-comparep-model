@@ -71,3 +71,7 @@ Thumbs.db
 *.pth
 *.h5
 
+# Temporary Web Uploads
+static/uploads/
+
+
