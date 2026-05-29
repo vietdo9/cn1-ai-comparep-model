@@ -202,7 +202,7 @@ class ModelComparatorApp:
         self.eff_result_var.set("Đang chạy...")
         self.resnet_result_var.set("Đang chạy...")
         self.xception_result_var.set("Đang chạy...")
-        self.compare_var.set("?ang compare...")
+        self.compare_var.set("Đang compare...")
         threading.Thread(target=self.run_predictions, daemon=True).start()
 
     def run_predictions(self):
