@@ -77,44 +77,6 @@
                         </div>
                         <input type="file" id="fileInput" accept="image/*" style="display: none;">
                     </div>
-
-                    <!-- Preloaded Samples -->
-                    <div class="samples-container">
-                        <span class="samples-title">Try Demo Samples:</span>
-                        <div class="samples-grid">
-                            <button class="sample-btn" data-sample="real_face.jpg">
-                                <i class="fa-solid fa-user-tie"></i> Real Portrait
-                            </button>
-                            <button class="sample-btn" data-sample="ai_landscape.jpg">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Landscape
-                            </button>
-                            <button class="sample-btn" data-sample="ai_anime.jpg">
-                                <i class="fa-solid fa-palette"></i> AI Anime Art
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card 2: Interactive Settings & Threshold -->
-                <div class="dashboard-card settings-card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-sliders"></i> Parameters</h3>
-                    </div>
-                    <div class="settings-body">
-                        <div class="setting-item">
-                            <div class="setting-label">
-                                <span>Decision Threshold</span>
-                                <span class="badge-val" id="thresholdVal">0.50</span>
-                            </div>
-                            <input type="range" id="thresholdSlider" min="0.05" max="0.95" step="0.05" value="0.50" class="neon-slider">
-                            <div class="slider-labels">
-                                <span>More FAKE bias</span>
-                                <span>Balanced</span>
-                                <span>More REAL bias</span>
-                            </div>
-                            <p class="setting-desc"><i class="fa-solid fa-circle-info"></i> Sets the minimum probability required to label an image as <strong>REAL</strong>. Higher values bias toward labelling as FAKE.</p>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Card 3: Preview and Metadata -->
@@ -392,7 +354,7 @@
 
         <!-- Footer -->
         <footer class="app-footer">
-            <p>&copy; 2026 AURA Analyzer &bull; Google Deepmind Advanced Agentic Coding Companion &bull; Custom Vanilla CSS Theme</p>
+            <p>&copy; 2026 AURA Analyzer</p>
         </footer>
 
     </div>

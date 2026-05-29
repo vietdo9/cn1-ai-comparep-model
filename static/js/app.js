@@ -8,8 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // DOM Elements
     const dropZone = document.getElementById("dropZone");
     const fileInput = document.getElementById("fileInput");
-    const thresholdSlider = document.getElementById("thresholdSlider");
-    const thresholdVal = document.getElementById("thresholdVal");
+    const thresholdSlider = document.getElementById("thresholdSlider") || { value: 0.50, addEventListener: () => {} };
+    const thresholdVal = document.getElementById("thresholdVal") || { textContent: "" };
     
     // Status Bar & Specs elements
     const deviceType = document.getElementById("deviceType");
