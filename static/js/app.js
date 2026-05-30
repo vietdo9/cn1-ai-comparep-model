@@ -5,6 +5,32 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Theme Toggle Logic
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
+    if (themeToggleBtn) {
+        const currentTheme = localStorage.getItem("theme") || "dark";
+        document.documentElement.setAttribute("data-theme", currentTheme);
+        updateThemeIcon(currentTheme);
+        
+        themeToggleBtn.addEventListener("click", () => {
+            const theme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", theme);
+            localStorage.setItem("theme", theme);
+            updateThemeIcon(theme);
+        });
+    }
+
+    function updateThemeIcon(theme) {
+        const icon = themeToggleBtn.querySelector("i");
+        if (icon) {
+            if (theme === "dark") {
+                icon.className = "fa-solid fa-sun";
+            } else {
+                icon.className = "fa-solid fa-moon";
+            }
+        }
+    }
+
     // DOM Elements
     const dropZone = document.getElementById("dropZone");
     const fileInput = document.getElementById("fileInput");
@@ -16,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const badgeEff = document.getElementById("badgeEff");
     const badgeRes = document.getElementById("badgeRes");
     const badgeXcp = document.getElementById("badgeXcp");
+    const badgeMbl = document.getElementById("badgeMbl");
     
     const effParamCount = document.getElementById("effParamCount");
     const effFileSize = document.getElementById("effFileSize");
@@ -28,6 +55,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const xcpParamCount = document.getElementById("xcpParamCount");
     const xcpFileSize = document.getElementById("xcpFileSize");
     const xcpTargetDevice = document.getElementById("xcpTargetDevice");
+
+    const mblParamCount = document.getElementById("mblParamCount");
+    const mblFileSize = document.getElementById("mblFileSize");
+    const mblTargetDevice = document.getElementById("mblTargetDevice");
 
     // Dashboard View States
     const welcomeCard = document.getElementById("welcomeCard");
@@ -80,6 +111,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const xcpFakeVal = document.getElementById("xcpFakeVal");
     const xcpLatency = document.getElementById("xcpLatency");
     const xcpDevice = document.getElementById("xcpDevice");
+
+    // MobileNetV2 Elements
+    const mblPredictBadge = document.getElementById("mblPredictBadge");
+    const mblRealBar = document.getElementById("mblRealBar");
+    const mblRealVal = document.getElementById("mblRealVal");
+    const mblFakeBar = document.getElementById("mblFakeBar");
+    const mblFakeVal = document.getElementById("mblFakeVal");
+    const mblLatency = document.getElementById("mblLatency");
+    const mblDevice = document.getElementById("mblDevice");
 
     // Diagnostics Elements
     const diagnosticHeader = document.getElementById("diagnosticHeader");
@@ -258,6 +298,20 @@ document.addEventListener("DOMContentLoaded", () => {
                         xcpParamCount.textContent = "Error";
                         xcpFileSize.textContent = "N/A";
                         xcpTargetDevice.textContent = "N/A";
+                    }
+
+                    // MobileNetV2 details
+                    const mbl = data.models.mobilenetv2;
+                    if (mbl && mbl.status.includes("Loaded")) {
+                        badgeMbl.classList.remove("error");
+                        mblParamCount.textContent = formatParams(mbl.params);
+                        mblFileSize.textContent = mbl.size_mb.toFixed(1) + " MB";
+                        mblTargetDevice.textContent = mbl.device.toUpperCase();
+                    } else {
+                        badgeMbl.classList.add("error");
+                        mblParamCount.textContent = "Error";
+                        mblFileSize.textContent = "N/A";
+                        mblTargetDevice.textContent = "N/A";
                     }
                 }
             })
@@ -493,6 +547,26 @@ document.addEventListener("DOMContentLoaded", () => {
             disableModelCard("xcp", xcp ? xcp.status : "Model error");
         }
 
+        // MobileNetV2
+        const mbl = results.mobilenetv2;
+        if (mbl && mbl.status === "Success") {
+            mbl.prediction = mbl.prob_real >= threshold ? "real" : "fake";
+            mbl.confidence = mbl.prediction === "real" ? mbl.prob_real : mbl.prob_fake;
+            
+            updateModelCard(
+                "mbl", 
+                mbl.prediction, 
+                mbl.confidence, 
+                mbl.prob_real, 
+                mbl.prob_fake, 
+                mbl.latency_ms, 
+                mbl.status
+            );
+            validResults.push(mbl);
+        } else {
+            disableModelCard("mbl", mbl ? mbl.status : "Model error");
+        }
+
         // --- Recalculate Consensus Aggregation ---
         if (validResults.length > 0) {
             const fakes = validResults.filter(r => r.prediction === "fake").length;
@@ -541,17 +615,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (consensusClass === "real") {
                 agreeText = `REAL (${agreementCount}/${validResults.length} Models Agree)`;
-                if (agreementCount === 3) {
-                    summaryText = "Triple architecture convergence! All deep networks strongly predict that this image is fully authentic and original.";
+                if (agreementCount === validResults.length) {
+                    summaryText = "Consensus convergence! All active deep networks strongly predict that this image is fully authentic and original.";
                 } else {
-                    summaryText = "Majority agreement (2 vs 1). Two neural models classify the target as REAL, though one model expresses dissent. Exercise standard caution.";
+                    summaryText = `Majority agreement (${agreementCount} vs ${validResults.length - agreementCount}). The models classify the target as REAL, though some express dissent. Exercise standard caution.`;
                 }
             } else if (consensusClass === "fake") {
                 agreeText = `FAKE (${agreementCount}/${validResults.length} Models Agree)`;
-                if (agreementCount === 3) {
-                    summaryText = "Triple engine alarm! All models converge on classification as FAKE, indicating high-probability AI generation, deepfake artifacts, or structural anomalies.";
+                if (agreementCount === validResults.length) {
+                    summaryText = "Multi-engine alarm! All active models converge on classification as FAKE, indicating high-probability AI generation, deepfake artifacts, or structural anomalies.";
                 } else {
-                    summaryText = "Majority agreement (2 vs 1). Two neural models alarm a FAKE prediction, while one network classifies it as Real. High likelihood of synthetic manipulation.";
+                    summaryText = `Majority alarm (${agreementCount} vs ${validResults.length - agreementCount}). The models identify the target as FAKE, though some classify it as Real. High likelihood of synthetic manipulation.`;
                 }
             } else {
                 agreeText = "MIXED CLASSIFICATION TIE";
@@ -587,11 +661,7 @@ document.addEventListener("DOMContentLoaded", () => {
         latencyEl.textContent = `${latency.toFixed(1)} ms`;
         
         // Match specific device string
-        if (prefix === "res") {
-            deviceEl.textContent = "CPU"; // ResNet is isolated on CPU to avoid CUDA resource lockups
-        } else {
-            deviceEl.textContent = deviceType.textContent;
-        }
+        deviceEl.textContent = deviceType.textContent;
     }
 
     // Helper: Disable model card on error

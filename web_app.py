@@ -29,28 +29,49 @@ app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max upload
 # Paths to models
 RUN_DIR = BASE_DIR / "runs" / "effb0_20260521_183925"
 XCEPTION_RUN_DIR = BASE_DIR / "runs" / "xception_20260522_161854"
+MOBILENET_RUN_DIR = BASE_DIR / "runs" / "mobilenetv2_20260521_201900"
 
 EFFICIENTNET_PATH = RUN_DIR / "best.pt"
-RESNET_PATH = RUN_DIR / "resnet50_real_vs_ai.h5"
+RESNET_PATH = BASE_DIR / "runs" / "resnet" / "resnet50_pytorch.pth"
 XCEPTION_PATH = XCEPTION_RUN_DIR / "best.pt"
+MOBILENET_PATH = MOBILENET_RUN_DIR / "mobilenetv2_ai_detector.pth"
 
 CONFIG_PATH = RUN_DIR / "config.yaml"
 XCEPTION_CONFIG_PATH = XCEPTION_RUN_DIR / "config.yaml"
+MOBILENET_CONFIG_PATH = MOBILENET_RUN_DIR / "config.yaml"
 FALLBACK_CONFIG_PATH = BASE_DIR / "configs" / "default.yaml"
 
 IMG_SIZE = 224
 THRESHOLD = 0.5
+
+import torchvision.models as tv_models
+
+class PyTorchResNet50Binary(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.base = tv_models.resnet50(weights=None)
+        self.base.fc = nn.Identity()
+        self.fc1 = nn.Linear(2048, 128)
+        self.fc2 = nn.Linear(128, 1)
+        
+    def forward(self, x):
+        x = self.base(x)
+        x = torch.relu(self.fc1(x))
+        x = torch.sigmoid(self.fc2(x))
+        return x
 
 # Global model state
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models = {
     "efficientnet": None,
     "resnet50": None,
-    "xception": None
+    "xception": None,
+    "mobilenetv2": None
 }
 transforms_dict = {
     "efficientnet": None,
-    "xception": None
+    "xception": None,
+    "mobilenetv2": None
 }
 models_meta = {}
 
@@ -106,30 +127,34 @@ def load_models():
         print(f"[!] Error loading EfficientNet: {e}")
         models_meta["efficientnet"] = {"status": f"Error: {str(e)}", "name": "EfficientNet-B0 (PyTorch)"}
 
-    # --- 2. Load ResNet50 (Keras/TensorFlow) ---
+    # --- 2. Load ResNet50 (PyTorch) ---
     try:
         print(f"[*] Loading ResNet50 from {RESNET_PATH}...")
-        import tensorflow as tf
-        
-        # CPU thread-safety configuration for TensorFlow
-        tf.config.set_visible_devices([], 'GPU') # Keep TF on CPU to avoid CUDA conflicts with PyTorch if active
-        resnet = tf.keras.models.load_model(str(RESNET_PATH))
-        models["resnet50"] = resnet
-        
-        # Get trainable parameters count for ResNet
-        resnet_params = resnet.count_params()
+        resnet_model = PyTorchResNet50Binary()
+        if RESNET_PATH.exists():
+            state_dict = torch.load(str(RESNET_PATH), map_location=device)
+            resnet_model.load_state_dict(state_dict)
+            resnet_model = resnet_model.to(device)
+            resnet_model.eval()
+            models["resnet50"] = resnet_model
+            status = "Loaded successfully"
+        else:
+            status = "Error: Checkpoint file not found"
+            print(f"[!] ResNet50 checkpoint file not found at: {RESNET_PATH}")
+            
         models_meta["resnet50"] = {
-            "name": "ResNet50 (Keras/TensorFlow)",
-            "path": str(RESNET_PATH.relative_to(BASE_DIR)),
-            "size_mb": get_file_size_mb(RESNET_PATH),
-            "params": resnet_params,
-            "status": "Loaded successfully",
-            "device": "CPU"
+            "name": "ResNet50 (PyTorch)",
+            "path": str(RESNET_PATH.relative_to(BASE_DIR)) if RESNET_PATH.exists() else str(RESNET_PATH),
+            "size_mb": get_file_size_mb(RESNET_PATH) if RESNET_PATH.exists() else 0.0,
+            "params": count_pytorch_params(resnet_model) if models["resnet50"] else 23725057,
+            "status": status,
+            "device": str(device) if models["resnet50"] else "N/A"
         }
-        print("[+] ResNet50 loaded successfully.")
+        if models["resnet50"]:
+            print("[+] ResNet50 loaded successfully.")
     except Exception as e:
         print(f"[!] Error loading ResNet50: {e}")
-        models_meta["resnet50"] = {"status": f"Error: {str(e)}", "name": "ResNet50 (Keras/TensorFlow)"}
+        models_meta["resnet50"] = {"status": f"Error: {str(e)}", "name": "ResNet50 (PyTorch)"}
 
     # --- 3. Load Xception (PyTorch) ---
     try:
@@ -169,6 +194,54 @@ def load_models():
         print(f"[!] Error loading Xception: {e}")
         models_meta["xception"] = {"status": f"Error: {str(e)}", "name": "Xception (PyTorch)"}
 
+    # --- 4. Load MobileNetV2 (PyTorch) ---
+    try:
+        cfg_path = MOBILENET_CONFIG_PATH if MOBILENET_CONFIG_PATH.exists() else FALLBACK_CONFIG_PATH
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            mb_config = yaml.safe_load(f)
+            
+        print(f"[*] Loading MobileNetV2 from {MOBILENET_PATH}...")
+        import torchvision.models as tv_models
+        mb_model = tv_models.mobilenet_v2(weights=None)
+        mb_model.classifier[1] = nn.Linear(mb_model.last_channel, 2)
+        
+        if MOBILENET_PATH.exists():
+            checkpoint = torch.load(str(MOBILENET_PATH), map_location=device)
+            if isinstance(checkpoint, dict):
+                if 'model_state_dict' in checkpoint:
+                    mb_model.load_state_dict(checkpoint['model_state_dict'])
+                elif 'state_dict' in checkpoint:
+                    mb_model.load_state_dict(checkpoint['state_dict'])
+                else:
+                    mb_model.load_state_dict(checkpoint)
+            else:
+                mb_model = checkpoint
+            mb_model = mb_model.to(device)
+            mb_model.eval()
+            models["mobilenetv2"] = mb_model
+            status = "Loaded successfully"
+        else:
+            status = "Error: Checkpoint file not found"
+            print(f"[!] MobileNetV2 checkpoint file not found at: {MOBILENET_PATH}")
+            
+        transforms_dict["mobilenetv2"] = get_transforms(
+            img_size=mb_config.get("image_size", IMG_SIZE),
+            is_train=False,
+        )
+        models_meta["mobilenetv2"] = {
+            "name": "MobileNetV2 (PyTorch)",
+            "path": str(MOBILENET_PATH.relative_to(BASE_DIR)) if MOBILENET_PATH.exists() else str(MOBILENET_PATH),
+            "size_mb": get_file_size_mb(MOBILENET_PATH) if MOBILENET_PATH.exists() else 0.0,
+            "params": count_pytorch_params(mb_model) if models["mobilenetv2"] else 3504872,
+            "status": status,
+            "device": str(device) if models["mobilenetv2"] else "N/A"
+        }
+        if models["mobilenetv2"]:
+            print("[+] MobileNetV2 loaded successfully.")
+    except Exception as e:
+        print(f"[!] Error loading MobileNetV2: {e}")
+        models_meta["mobilenetv2"] = {"status": f"Error: {str(e)}", "name": "MobileNetV2 (PyTorch)"}
+
 
 # Run model loader once
 load_models()
@@ -191,21 +264,24 @@ def predict_effnet(image_path):
     }
 
 def predict_resnet(image_path):
-    """Predict using ResNet50 Keras/TF model."""
+    """Predict using ResNet50 PyTorch model with Keras preprocessing."""
     if not models["resnet50"]:
         raise ValueError("ResNet50 model is not loaded.")
         
-    import tensorflow as tf
-    # TF loads image using its own loader, preprocesses and predicts
-    img = tf.keras.utils.load_img(image_path, target_size=(IMG_SIZE, IMG_SIZE))
-    x = tf.keras.utils.img_to_array(img)
-    x = np.expand_dims(x, axis=0)
-    x = tf.keras.applications.resnet50.preprocess_input(x)
+    img = Image.open(image_path).convert("RGB")
+    img = img.resize((224, 224), Image.BILINEAR)
+    x = np.array(img, dtype=np.float32)
+    x = x[:, :, ::-1].copy() # RGB -> BGR with positive strides
+    x[:, :, 0] -= 103.939 # B
+    x[:, :, 1] -= 116.779 # G
+    x[:, :, 2] -= 123.68  # R
+    x = x.transpose(2, 0, 1) # HWC -> CHW
+    x = torch.from_numpy(x).unsqueeze(0).to(device)
     
-    # Run prediction
-    prob_real = float(models["resnet50"].predict(x, verbose=0)[0][0])
-    prob_fake = 1.0 - prob_real
-    
+    with torch.no_grad():
+        prob_real = float(models["resnet50"](x).cpu().numpy()[0][0])
+        prob_fake = 1.0 - prob_real
+        
     return {
         "prob_fake": prob_fake,
         "prob_real": prob_real
@@ -221,6 +297,23 @@ def predict_xception(image_path):
     
     with torch.no_grad():
         logits = models["xception"](x)
+        probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
+        
+    return {
+        "prob_fake": float(probs[0]),
+        "prob_real": float(probs[1])
+    }
+
+def predict_mobilenet(image_path):
+    """Predict using MobileNetV2 PyTorch model."""
+    if not models["mobilenetv2"]:
+        raise ValueError("MobileNetV2 model is not loaded.")
+        
+    img = Image.open(image_path).convert("RGB")
+    x = transforms_dict["mobilenetv2"](img).unsqueeze(0).to(device)
+    
+    with torch.no_grad():
+        logits = models["mobilenetv2"](x)
         probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
         
     return {
@@ -332,6 +425,7 @@ def run_predict():
     results["efficientnet"] = safe_predict(predict_effnet, "efficientnet", "EfficientNet-B0")
     results["resnet50"] = safe_predict(predict_resnet, "resnet50", "ResNet50")
     results["xception"] = safe_predict(predict_xception, "xception", "Xception")
+    results["mobilenetv2"] = safe_predict(predict_mobilenet, "mobilenetv2", "MobileNetV2")
     
     # Calculate consensus/aggregations
     valid_predictions = [r["prediction"] for r in results.values() if r["status"] == "Success"]
@@ -358,7 +452,7 @@ def run_predict():
             agreement_count = 0
             
         if consensus_class == "mixed":
-            consensus_summary = f"Mixed (Tie: 1 FAKE, 1 REAL)"
+            consensus_summary = f"Mixed (Tie: {fakes} FAKE, {reals} REAL)"
         else:
             percentage = (agreement_count / total_valid) * 100
             consensus_summary = f"{consensus_class.upper()} ({agreement_count}/{total_valid} models agree - {percentage:.0f}%)"

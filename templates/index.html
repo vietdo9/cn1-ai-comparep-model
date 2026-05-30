@@ -38,17 +38,25 @@
                 </div>
             </div>
             
-            <!-- Dynamic Status Bar -->
-            <div class="system-status" id="systemStatus">
-                <div class="status-indicator">
-                    <span class="pulse-dot active"></span>
-                    <span class="status-label">Device: <strong id="deviceType">Detecting...</strong></span>
-                </div>
-                <div class="divider"></div>
-                <div class="status-models">
-                    <span class="model-badge" id="badgeEff"><i class="fa-solid fa-check-circle"></i> EffNet</span>
-                    <span class="model-badge" id="badgeRes"><i class="fa-solid fa-check-circle"></i> ResNet</span>
-                    <span class="model-badge" id="badgeXcp"><i class="fa-solid fa-check-circle"></i> Xception</span>
+            <div class="header-actions">
+                <!-- Theme Switcher Button -->
+                <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle dark/light theme">
+                    <i class="fa-solid fa-sun"></i>
+                </button>
+                
+                <!-- Dynamic Status Bar -->
+                <div class="system-status" id="systemStatus">
+                    <div class="status-indicator">
+                        <span class="pulse-dot active"></span>
+                        <span class="status-label">Device: <strong id="deviceType">Detecting...</strong></span>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="status-models">
+                        <span class="model-badge" id="badgeEff"><i class="fa-solid fa-check-circle"></i> EffNet</span>
+                        <span class="model-badge" id="badgeRes"><i class="fa-solid fa-check-circle"></i> ResNet</span>
+                        <span class="model-badge" id="badgeXcp"><i class="fa-solid fa-check-circle"></i> Xception</span>
+                        <span class="model-badge" id="badgeMbl"><i class="fa-solid fa-check-circle"></i> MobileNet</span>
+                    </div>
                 </div>
             </div>
         </header>
@@ -133,8 +141,8 @@
                     <div class="spinner-container">
                         <div class="double-spinner"></div>
                     </div>
-                    <h3>Running Triple Neural Inference</h3>
-                    <p>Executing forward passes on EfficientNet-B0, ResNet50, and Xception architectures...</p>
+                    <h3>Running Quad Neural Inference</h3>
+                    <p>Executing forward passes on EfficientNet-B0, ResNet50, Xception, and MobileNetV2 architectures...</p>
                 </div>
 
                 <!-- Card 1: Consensus aggregate summary -->
@@ -156,8 +164,8 @@
                                 </div>
                             </div>
                             <div class="consensus-text">
-                                <h4 id="consensusTitle">REAL (3/3 Models Agree)</h4>
-                                <p id="consensusSummary">All three network architectures predict with extreme confidence that this image is authentic and contains no AI-generated elements.</p>
+                                <h4 id="consensusTitle">REAL (4/4 Models Agree)</h4>
+                                <p id="consensusSummary">All four network architectures predict with extreme confidence that this image is authentic and contains no AI-generated elements.</p>
                             </div>
                         </div>
                         <div class="consensus-stats">
@@ -215,7 +223,7 @@
                         <div class="model-card-header">
                             <div class="model-title-block">
                                 <span class="model-name">ResNet50</span>
-                                <span class="model-tech">Keras / TF</span>
+                                <span class="model-tech">PyTorch</span>
                             </div>
                             <span class="model-prediction-badge real" id="resPredictBadge">REAL</span>
                         </div>
@@ -276,6 +284,39 @@
                         </div>
                     </div>
 
+                    <!-- MobileNetV2 Card -->
+                    <div class="model-result-card" id="cardMblNet">
+                        <div class="model-card-header">
+                            <div class="model-title-block">
+                                <span class="model-name">MobileNetV2</span>
+                                <span class="model-tech">PyTorch</span>
+                            </div>
+                            <span class="model-prediction-badge fake" id="mblPredictBadge">FAKE</span>
+                        </div>
+                        <div class="model-card-body">
+                            <div class="prob-distribution">
+                                <div class="prob-bar-row">
+                                    <span class="prob-label">Real</span>
+                                    <div class="prob-bar-container">
+                                        <div class="prob-bar real-bar" id="mblRealBar" style="width: 2%"></div>
+                                    </div>
+                                    <span class="prob-val" id="mblRealVal">0.0%</span>
+                                </div>
+                                <div class="prob-bar-row">
+                                    <span class="prob-label">Fake</span>
+                                    <div class="prob-bar-container">
+                                        <div class="prob-bar fake-bar" id="mblFakeBar" style="width: 98%"></div>
+                                    </div>
+                                    <span class="prob-val" id="mblFakeVal">0.0%</span>
+                                </div>
+                            </div>
+                            <div class="model-meta-row">
+                                <span><i class="fa-solid fa-gauge-high"></i> Latency: <strong id="mblLatency">0.0 ms</strong></span>
+                                <span><i class="fa-solid fa-server"></i> Device: <strong id="mblDevice">CUDA</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
             </section>
@@ -325,7 +366,7 @@
                                     </tr>
                                     <tr>
                                         <td>ResNet50</td>
-                                        <td>Keras / TensorFlow 2.10</td>
+                                        <td>PyTorch</td>
                                         <td id="resParamCount">Loading...</td>
                                         <td id="resFileSize">Loading...</td>
                                         <td id="resTargetDevice">Loading...</td>
@@ -336,6 +377,13 @@
                                         <td id="xcpParamCount">Loading...</td>
                                         <td id="xcpFileSize">Loading...</td>
                                         <td id="xcpTargetDevice">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>MobileNetV2</td>
+                                        <td>PyTorch / torchvision</td>
+                                        <td id="mblParamCount">Loading...</td>
+                                        <td id="mblFileSize">Loading...</td>
+                                        <td id="mblTargetDevice">Loading...</td>
                                     </tr>
                                 </tbody>
                             </table>
