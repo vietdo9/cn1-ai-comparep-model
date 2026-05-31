@@ -39,16 +39,10 @@ venv.bak/
 *.swo
 *~
 
-# PyTorch
-*.pth
-*.pt
-*.h5
-!mobilenetv2_ai_detector/models/mobilenetv2_ai_detector.pth
-!runs/**/best.pt
-!runs/**/last.pt
+# PyTorch Models - INCLUDED IN REPO (for easy VPS deployment)
+# Don't exclude: *.pth, *.pt, *.h5
 
-# TensorBoard / logs
-runs/*/tb/
+# TensorBoard logs
 events.out.tfevents.*
 
 # Dataset (too large for Git)
@@ -66,12 +60,10 @@ Thumbs.db
 # Misc
 *.log
 
-# Large model files
-*.pt
-*.pth
-*.h5
-
 # Temporary Web Uploads
-static/uploads/
+static/uploads/*
+
+# Environment specific
+.env
 
 
